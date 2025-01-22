@@ -19,7 +19,6 @@ const SignIn = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    // Clear error message when the user types
     setErrors({ ...errors, [name]: "" });
   };
 

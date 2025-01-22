@@ -19,12 +19,65 @@ const SignUp = () => {
 
   const navigate = useNavigate();
 
+  // Validation function for live validation
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case "name":
+        if (!value) {
+          newErrors.name = "Name is required!";
+        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+          newErrors.name =
+            "Name must not contain special characters or numbers!";
+        } else {
+          delete newErrors.name;
+        }
+        break;
+
+      case "email":
+        if (!value) {
+          newErrors.email = "Email is required!";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = "Email is invalid!";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case "password":
+        if (!value) {
+          newErrors.password = "Password is required!";
+        } else if (value.length < 8) {
+          newErrors.password = "Password must be at least 8 characters!";
+        } else {
+          delete newErrors.password;
+        }
+        break;
+
+      case "confirmPassword":
+        if (!value) {
+          newErrors.confirmPassword = "Confirm password is required!";
+        } else if (value !== formData.password) {
+          newErrors.confirmPassword = "Passwords do not match!";
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  // Handle input change with live validation
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
 
-    // Clear error message when the user types
-    setErrors({ ...errors, [name]: "" });
+    setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const handleSubmit = (e) => {
@@ -32,7 +85,7 @@ const SignUp = () => {
     const { name, email, password, confirmPassword } = formData;
     let formErrors = { ...errors };
 
-    // Validation
+    // Final validation before submission
     if (!name) formErrors.name = "Name is required!";
     if (!email) formErrors.email = "Email is required!";
     if (!password) formErrors.password = "Password is required!";
@@ -41,23 +94,22 @@ const SignUp = () => {
     if (password !== confirmPassword)
       formErrors.confirmPassword = "Passwords do not match!";
 
-    // Set errors if any
-    if (Object.values(formErrors).some((error) => error !== "")) {
-      setErrors(formErrors);
-      return;
-    }
+    setErrors(formErrors);
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const userExists = users.some((user) => user.email === email);
+    // If no errors, save the user
+    if (Object.values(formErrors).every((error) => error === "")) {
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+      const userExists = users.some((user) => user.email === email);
 
-    if (userExists) {
-      formErrors.email = "User already exists!";
-      setErrors(formErrors);
-    } else {
-      users.push({ name, email, password });
-      localStorage.setItem("users", JSON.stringify(users));
-      alert("Sign-up successful!");
-      navigate("/");
+      if (userExists) {
+        formErrors.email = "User already exists!";
+        setErrors(formErrors);
+      } else {
+        users.push({ name, email, password });
+        localStorage.setItem("users", JSON.stringify(users));
+        alert("Sign-up successful!");
+        navigate("/");
+      }
     }
   };
 

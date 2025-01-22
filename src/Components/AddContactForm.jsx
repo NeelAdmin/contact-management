@@ -8,50 +8,100 @@ const AddContactForm = ({ onAddContact, onClose }) => {
     image: null,
   });
   const [errors, setErrors] = useState({});
-  const [imagePreview, setImagePreview] = useState(null); // state for the image preview
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case "name":
+        if (!value.trim()) {
+          newErrors.name = "Name is required.";
+        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+          newErrors.name =
+            "Name must not contain special characters or numbers.";
+        } else {
+          delete newErrors.name;
+        }
+        break;
+
+      case "email":
+        if (!value.trim()) {
+          newErrors.email = "Email is required.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = "Invalid email format.";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case "phone":
+        if (!value.trim()) {
+          newErrors.phone = "Phone number is required.";
+        } else if (!/^\d{10}$/.test(value)) {
+          newErrors.phone = "Phone number must be exactly 10 digits.";
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setContactData({ ...contactData, [name]: value });
-    setErrors({ ...errors, [name]: "" });
+    validateField(name, value); // Validate field live as user types
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
 
-    // Check if the file size is greater than 2MB
-    if (file && file.size > 2 * 1024 * 1024) {
-      setErrors({ ...errors, image: "Image size should be less than 2MB" });
-      return;
-    }
-
-    setContactData({ ...contactData, image: file });
-    setErrors({ ...errors, image: "" });
-
-    // Create an image preview if file is selected
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result); // Set the preview of the image
-    };
     if (file) {
+      if (!allowedTypes.includes(file.type)) {
+        setErrors({
+          ...errors,
+          image: "Only JPEG, JPG, and PNG files are allowed.",
+        });
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors({ ...errors, image: "Image size should be less than 2MB." });
+        return;
+      }
+
+      setContactData({ ...contactData, image: file });
+      setErrors({ ...errors, image: "" });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
       reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const { name, email, phone, image } = contactData;
     const newErrors = {};
 
-    if (!name) newErrors.name = "Name is required";
-    if (!email) newErrors.email = "Email is required";
-    if (!phone) newErrors.phone = "Phone number is required";
-    if (!image) newErrors.image = "Image is required";
+    // Final validation before submission
+    if (!name.trim()) newErrors.name = "Name is required.";
+    if (!email.trim()) newErrors.email = "Email is required.";
+    if (!phone.trim()) newErrors.phone = "Phone number is required.";
+    if (!image) newErrors.image = "Profile image is required.";
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Read the image as base64 and save it
       const reader = new FileReader();
       reader.onloadend = () => {
         const contactWithImage = { ...contactData, image: reader.result };
@@ -134,6 +184,7 @@ const AddContactForm = ({ onAddContact, onClose }) => {
             </label>
             <input
               type="file"
+              accept="image/jpeg, image/jpg, image/png"
               onChange={handleImageChange}
               className={getInputClassName("image")}
             />
